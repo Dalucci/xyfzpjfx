@@ -1,0 +1,148 @@
+{
+  "primary": {
+    "成绩波动趋势": {
+      "weight": 0.35,
+      "secondary": {
+        "基础成绩水平": {
+          "weight": 0.40,
+          "indicators": {
+            "期中期末各科成绩": {"weight": 0.30, "type": "score", "range": [0, 100]},
+            "各科平均成绩": {"weight": 0.25, "type": "score", "range": [0, 100]},
+            "总体平均成绩": {"weight": 0.45, "type": "score", "range": [0, 100]}
+          }
+        },
+        "成绩波动幅度": {
+          "weight": 0.30,
+          "indicators": {
+            "成绩标准差": {"weight": 0.40, "type": "continuous", "direction": "lower_better"},
+            "成绩极差": {"weight": 0.30, "type": "continuous", "direction": "lower_better"},
+            "成绩趋势斜率": {"weight": 0.30, "type": "trend", "direction": "higher_better"}
+          }
+        },
+        "进步退步幅度": {
+          "weight": 0.30,
+          "indicators": {
+            "相邻考试成绩差值": {"weight": 0.40, "type": "trend", "direction": "higher_better"},
+            "累计进步幅度": {"weight": 0.60, "type": "trend", "direction": "higher_better"}
+          }
+        }
+      }
+    },
+    "知识点掌握度": {
+      "weight": 0.35,
+      "secondary": {
+        "知识点达标率": {
+          "weight": 0.50,
+          "indicators": {
+            "各章节知识点正确率": {"weight": 0.40, "type": "score", "range": [0, 100]},
+            "高频考点掌握率": {"weight": 0.35, "type": "score", "range": [0, 100]},
+            "薄弱知识点数量": {"weight": 0.25, "type": "count", "direction": "lower_better"}
+          }
+        },
+        "知识点应用能力": {
+          "weight": 0.50,
+          "indicators": {
+            "综合题正确率": {"weight": 0.35, "type": "score", "range": [0, 100]},
+            "知识点迁移题正确率": {"weight": 0.35, "type": "score", "range": [0, 100]},
+            "错题重复犯错率": {"weight": 0.30, "type": "score", "range": [0, 100], "direction": "lower_better"}
+          }
+        }
+      }
+    },
+    "学习行为活跃度": {
+      "weight": 0.30,
+      "secondary": {
+        "课堂互动行为": {
+          "weight": 0.25,
+          "indicators": {
+            "课堂发言次数": {"weight": 0.25, "type": "count", "direction": "higher_better"},
+            "课堂互动参与度": {"weight": 0.30, "type": "score", "range": [0, 100]},
+            "课堂专注度评分": {"weight": 0.25, "type": "score", "range": [0, 100]},
+            "课堂小组合作评分": {"weight": 0.20, "type": "score", "range": [0, 100]}
+          }
+        },
+        "作业提交行为": {
+          "weight": 0.30,
+          "indicators": {
+            "作业按时提交率": {"weight": 0.25, "type": "score", "range": [0, 100]},
+            "作业迟交次数": {"weight": 0.15, "type": "count", "direction": "lower_better"},
+            "作业质量评分": {"weight": 0.25, "type": "score", "range": [0, 100]},
+            "作业订正完成率": {"weight": 0.20, "type": "score", "range": [0, 100]},
+            "学习任务完成率": {"weight": 0.15, "type": "score", "range": [0, 100]}
+          }
+        },
+        "在线学习行为": {
+          "weight": 0.25,
+          "indicators": {
+            "在线学习时长": {"weight": 0.20, "type": "count", "direction": "higher_better"},
+            "资源访问次数": {"weight": 0.15, "type": "count", "direction": "higher_better"},
+            "在线测验完成率": {"weight": 0.20, "type": "score", "range": [0, 100]},
+            "视频学习完成率": {"weight": 0.20, "type": "score", "range": [0, 100]},
+            "在线讨论参与次数": {"weight": 0.10, "type": "count", "direction": "higher_better"},
+            "平台登录频率": {"weight": 0.15, "type": "count", "direction": "higher_better"}
+          }
+        },
+        "自主学习行为": {
+          "weight": 0.20,
+          "indicators": {
+            "自主学习时长": {"weight": 0.15, "type": "count", "direction": "higher_better"},
+            "课外阅读量": {"weight": 0.15, "type": "count", "direction": "higher_better"},
+            "自主刷题数量": {"weight": 0.20, "type": "count", "direction": "higher_better"},
+            "学习计划完成率": {"weight": 0.20, "type": "score", "range": [0, 100]},
+            "错题整理次数": {"weight": 0.15, "type": "count", "direction": "higher_better"},
+            "预习完成率": {"weight": 0.15, "type": "score", "range": [0, 100]}
+          }
+        }
+      }
+    }
+  },
+  "mastery_threshold": 65,
+  "levels": [
+    {"name": "优秀", "min_score": 85},
+    {"name": "良好", "min_score": 70},
+    {"name": "中等", "min_score": 55},
+    {"name": "待提高", "min_score": 40},
+    {"name": "需帮扶", "min_score": 0}
+  ],
+  "aliases": {
+    "学号": ["student_id", "id", "学生编号", "编号"],
+    "姓名": ["name", "学生姓名"],
+    "班级": ["class", "班级名称"],
+    "学科": ["subject", "科目"],
+    "期中期末各科成绩": ["期中/期末各科成绩", "期中期末成绩", "exam_score", "score"],
+    "各科平均成绩": ["单科平均成绩", "平均成绩", "subject_avg", "avg_score"],
+    "总体平均成绩": ["总平均成绩", "overall_avg", "overall_score"],
+    "成绩标准差": ["score_std", "成绩波动标准差"],
+    "成绩极差": ["score_range", "成绩范围"],
+    "成绩趋势斜率": ["trend_slope", "趋势斜率"],
+    "相邻考试成绩差值": ["last_diff", "最近一次进步幅度"],
+    "累计进步幅度": ["total_progress", "累计进步"],
+    "各章节知识点正确率": ["chapter_accuracy", "章节正确率", "知识点正确率"],
+    "高频考点掌握率": ["hotspot_mastery", "高频考点正确率"],
+    "薄弱知识点数量": ["weak_points", "薄弱点数量"],
+    "综合题正确率": ["comprehensive_accuracy", "综合题得分率"],
+    "知识点迁移题正确率": ["transfer_accuracy", "迁移题正确率"],
+    "错题重复犯错率": ["repeat_error_rate", "重复犯错率"],
+    "课堂发言次数": ["speak_count", "发言次数"],
+    "课堂互动参与度": ["interaction_rate", "互动参与度"],
+    "课堂专注度评分": ["attention_score", "专注度"],
+    "课堂小组合作评分": ["group_score", "小组合作评分"],
+    "作业按时提交率": ["homework_on_time_rate", "按时提交率"],
+    "作业迟交次数": ["late_homework_count", "迟交次数"],
+    "作业质量评分": ["homework_quality", "作业质量"],
+    "作业订正完成率": ["homework_correction_rate", "订正完成率"],
+    "学习任务完成率": ["task_completion_rate", "任务完成率"],
+    "在线学习时长": ["online_hours", "线上学习时长"],
+    "资源访问次数": ["resource_visits", "资源浏览次数"],
+    "在线测验完成率": ["quiz_completion_rate", "测验完成率"],
+    "视频学习完成率": ["video_completion_rate", "视频完成率"],
+    "在线讨论参与次数": ["discussion_count", "讨论参与次数"],
+    "平台登录频率": ["login_frequency", "登录次数"],
+    "自主学习时长": ["self_study_hours", "自主学习小时"],
+    "课外阅读量": ["reading_count", "阅读量"],
+    "自主刷题数量": ["practice_count", "刷题数量"],
+    "学习计划完成率": ["plan_completion_rate", "计划完成率"],
+    "错题整理次数": ["mistake_review_count", "错题本整理次数"],
+    "预习完成率": ["preview_completion_rate", "预习率"]
+  }
+}

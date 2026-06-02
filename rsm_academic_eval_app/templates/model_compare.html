@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}模型比较 - 学生学业发展评价分析平台{% endblock %}
+{% block content %}
+<section class="card page-hero">
+  <div class="section-title page-header">
+    <div class="page-header-main">
+      <h1>模型比较</h1>
+      <p>比较重点模型在当前样本下的均分、运行状态和图表覆盖情况，用于课题展示时说明不同模型回答的问题不同。</p>
+    </div>
+    <div class="actions action-panel">
+      <a class="btn secondary" href="{{ url_for('model_center') }}">返回模型中心</a>
+      <a class="btn ghost" href="{{ url_for('api_model_compare') }}">查看JSON</a>
+    </div>
+  </div>
+</section>
+
+<section class="grid grid-3 mt">
+  <div class="card">
+    <h2>样本规模</h2>
+    <div class="kpi"><span class="value">{{ compare.student_count }}</span><span class="label">参与比较学生数</span></div>
+  </div>
+  <div class="card">
+    <h2>数据状态</h2>
+    <p>可用指标 {{ compare.data_quality.indicator_count }} 项，学科 {{ compare.data_quality.subject_count }} 个，缺失率 {{ compare.data_quality.missing_ratio }}%。</p>
+  </div>
+  <div class="card">
+    <h2>比较API</h2>
+    <p>可通过 <code>/api/models/compare?ids=ahp,rsm,risk_warning</code> 比较指定模型。</p>
+  </div>
+</section>
+
+<section class="card mt">
+  <h2>重点模型对比表</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>模型ID</th>
+          <th>模型名称</th>
+          <th>类别</th>
+          <th>状态</th>
+          <th>均分指标</th>
+          <th>均分</th>
+          <th>图表数</th>
+          <th>入口</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in compare.models %}
+          <tr>
+            <td>{{ item.model_id }}</td>
+            <td>{{ item.model_name }}</td>
+            <td>{{ item.category }}</td>
+            <td>{{ item.status }}</td>
+            <td>{{ item.score_label }}</td>
+            <td>{{ item.mean_score }}</td>
+            <td>{{ item.chart_count }}</td>
+            <td><a href="{{ url_for('model_detail', model_id=item.model_id) }}">进入</a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

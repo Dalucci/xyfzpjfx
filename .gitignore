@@ -1,0 +1,11 @@
+.vs/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+rsm_academic_eval_app/.venv/
+rsm_academic_eval_app/uploads/
+rsm_academic_eval_app/output/
+rsm_academic_eval_app/site/
+rsm_academic_eval_app/*.log
+rsm_academic_eval_app/.env

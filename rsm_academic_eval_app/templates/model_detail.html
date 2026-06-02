@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}{{ result.model_name }} - 模型中心{% endblock %}
+{% block content %}
+<section class="card page-hero model-hero">
+  <div class="section-title page-header">
+    <div class="page-header-main">
+      <h1>{{ result.model_name }}</h1>
+      <p>{{ model_entry.description }}</p>
+      <div class="pill-row">
+        <span class="pill">{{ result.category }}</span>
+        <span class="pill status-{{ result.status }}">{{ "完整运行" if result.status == "ok" else "降级运行" }}</span>
+        <span class="pill">样本量 {{ result.data_quality.sample_count }} 人</span>
+        <span class="pill">图表 {{ result.charts | length }} 个</span>
+      </div>
+    </div>
+    <div class="actions action-panel">
+      <a class="btn secondary" href="{{ url_for('model_center') }}">模型中心</a>
+      <a class="btn secondary" href="{{ url_for('api_export_model', model_id=result.model_id, fmt='csv') }}">导出CSV</a>
+      <a class="btn secondary" href="{{ url_for('api_export_model', model_id=result.model_id, fmt='excel') }}">导出Excel</a>
+      <a class="btn ghost" href="{{ url_for('api_export_model', model_id=result.model_id, fmt='json') }}">导出JSON</a>
+    </div>
+  </div>
+  <p class="muted-line">{{ result.status_message }}</p>
+</section>
+
+<section class="metric-strip mt">
+  {% for card in result.summary_cards %}
+    <div class="metric-card metric-compact">
+      <span class="metric-title">{{ card.label }}</span>
+      <strong>{{ card.value }}{{ card.unit }}</strong>
+      <span class="metric-desc">{{ card.trend }}</span>
+    </div>
+  {% endfor %}
+</section>
+
+<section class="info-grid mt">
+  <div class="card">
+    <h2>数据质量</h2>
+    <div class="quality-list">
+      <span>班级数：{{ result.data_quality.class_count }}</span>
+      <span>学科数：{{ result.data_quality.subject_count }}</span>
+      <span>可用指标：{{ result.data_quality.indicator_count }}</span>
+      <span>缺失率：{{ result.data_quality.missing_ratio }}%</span>
+      <span>缺少数据：{{ result.data_quality.missing_required | join('、') if result.data_quality.missing_required else '无' }}</span>
+    </div>
+  </div>
+  <div class="card wide-card">
+    <h2>模型解释</h2>
+    {% for item in result.explanations %}
+      <h3>{{ item.title }}</h3>
+      <p>{{ item.body }}</p>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="chart-grid mt">
+  {% for chart in result.charts %}
+    <div class="card chart-card">
+      <h2>{{ chart.title }}</h2>
+      <p>{{ chart.description }}</p>
+      <canvas class="chart" id="{{ chart.chart_id }}" data-chart-id="{{ chart.chart_id }}"></canvas>
+      <p class="chart-note">{{ chart.interpretation }}</p>
+    </div>
+  {% endfor %}
+</section>
+
+<section class="card mt">
+  <div class="section-title table-head">
+    <div class="page-header-main">
+      <h2>学生明细与个体诊断</h2>
+      <p>表格展示当前模型下的学生得分、等级、风险、薄弱点和建议。点击“综合画像”可查看该生跨模型诊断。</p>
+    </div>
+    <input class="table-search" id="studentSearch" type="search" placeholder="搜索姓名、学号、班级、学科">
+  </div>
+  <div class="table-wrap">
+    <table id="modelStudentTable">
+      <thead>
+        <tr>
+          <th>学号</th>
+          <th>姓名</th>
+          <th>班级</th>
+          <th>学科</th>
+          <th>模型得分</th>
+          <th>等级</th>
+          <th>风险</th>
+          <th>薄弱点</th>
+          <th>建议</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in result.student_table %}
+          <tr data-student-row>
+            <td>{{ row.student_id }}</td>
+            <td>{{ row.name }}</td>
+            <td>{{ row.class_name }}</td>
+            <td>{{ row.subject }}</td>
+            <td>{{ row.score }}</td>
+            <td>{{ row.level }}</td>
+            <td>{{ row.risk_level }}</td>
+            <td class="wrap-cell">{{ row.weak_points }}</td>
+            <td class="wrap-cell">{{ row.recommendation }}</td>
+            <td><a href="{{ url_for('student_profile', student_id=row.student_id) }}">综合画像</a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card mt">
+  <h2>重点建议</h2>
+  <div class="recommendation-grid">
+    {% for item in result.recommendations %}
+      <div class="recommendation-item">
+        <strong>{{ item.name }} · {{ item.priority }}</strong>
+        <span>{{ item.reason }}</span>
+        <p>{{ item.suggestion }}</p>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='charts.js') }}"></script>
+<script src="{{ url_for('static', filename='model_pages.js') }}"></script>
+<script>
+  window.MODEL_RESULT = {{ result | tojson }};
+  renderModelPage(window.MODEL_RESULT);
+</script>
+{% endblock %}

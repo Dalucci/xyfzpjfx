@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block title %}分析结果 - 学生学业发展规则空间分析系统{% endblock %}
+{% block content %}
+<section class="card">
+  <div class="actions" style="justify-content: space-between;">
+    <div>
+      <h2>规则空间模型分析结果</h2>
+      <p>Theta 表示属性掌握度，Zeta 表示学生当前属性模式与最近理想发展状态的偏离度。通常 Theta 越高越好，Zeta 越低说明诊断结果越稳定、越接近某一类理想状态。</p>
+    </div>
+    <div class="actions">
+      <a class="btn secondary" href="{{ url_for('download', kind='results') }}">下载结果CSV</a>
+      <a class="btn secondary" href="{{ url_for('download', kind='excel') }}">下载Excel报告</a>
+      <a class="btn secondary" href="{{ url_for('download', kind='normalized') }}">下载标准化数据</a>
+    </div>
+  </div>
+  <div class="grid grid-4 mt">
+    <div class="kpi"><span class="value">{{ summary.student_count }}</span><span class="label">学生数</span></div>
+    <div class="kpi"><span class="value">{{ summary.indicator_count }}</span><span class="label">可用指标数</span></div>
+    <div class="kpi"><span class="value">{{ summary.rsm_mean }}</span><span class="label">RSM调整均分</span></div>
+    <div class="kpi"><span class="value">{{ summary.zeta_mean }}</span><span class="label">平均偏离度Zeta</span></div>
+  </div>
+</section>
+
+<section class="card mt">
+  <h3>学科模型子页面</h3>
+  <div class="subject-card-grid compact">
+    {% for item in subject_models %}
+      <a class="subject-card-link" href="{{ url_for('model_subject', subject_key=item.key) }}" style="--subject-color: {{ item.theme }};">
+        <strong>{{ item.short_name }}</strong>
+        <span>{{ item.display_name }}</span>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="card mt">
+  <div class="section-title">
+    <div>
+      <h3>多模型诊断概览</h3>
+      <p>在 RSM 主模型基础上，增加成长动能、学习稳定性、知行耦合、风险预警和学生画像分群，用于从不同角度解释同一批学生的发展状态。</p>
+    </div>
+  </div>
+  <div class="model-card-grid">
+    {% for item in summary.model_cards %}
+      <div class="metric-card">
+        <span class="metric-title">{{ item.name }}</span>
+        <strong>{{ item.score }}</strong>
+        <span class="metric-desc">{{ item.description }}</span>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="grid grid-2 mt">
+  <div class="card"><canvas class="chart" id="levelChart"></canvas></div>
+  <div class="card"><canvas class="chart" id="modelIndexChart"></canvas></div>
+  <div class="card"><canvas class="chart" id="riskChart"></canvas></div>
+  <div class="card"><canvas class="chart" id="profileChart"></canvas></div>
+  <div class="card"><canvas class="chart" id="scoreHistogram"></canvas></div>
+  <div class="card"><canvas class="chart" id="primaryRadar"></canvas></div>
+  <div class="card"><canvas class="chart" id="weakChart"></canvas></div>
+  <div class="card"><canvas class="chart" id="scatterChart"></canvas></div>
+  <div class="card wide-card"><canvas class="chart tall-chart" id="subjectHeatmap"></canvas></div>
+  <div class="card wide-card"><canvas class="chart tall-chart" id="couplingScatter"></canvas></div>
+</section>
+
+<section class="grid grid-2 mt">
+  <div class="card">
+    <h3>重点关注学生</h3>
+    {% if summary.focus_students %}
+      <div class="table-wrap" style="max-height: 300px;">
+        <table>
+          <thead><tr><th>学号</th><th>姓名</th><th>班级</th><th>学科</th><th>RSM调整分</th><th>等级</th><th>潜力</th><th>预警</th><th>优先级</th><th>薄弱属性</th></tr></thead>
+          <tbody>
+          {% for s in summary.focus_students %}
+            <tr>
+              <td>{{ s['学号'] }}</td><td>{{ s['姓名'] }}</td><td>{{ s['班级'] }}</td><td>{{ s['学科'] }}</td>
+              <td>{{ s['RSM调整分'] }}</td><td>{{ s['学业等级'] }}</td><td>{{ s['发展潜力'] }}</td><td>{{ s['风险预警等级'] }}</td><td>{{ s['干预优先级'] }}</td><td>{{ s['薄弱属性'] }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p>暂无待提高或需帮扶学生。</p>
+    {% endif %}
+  </div>
+  <div class="card">
+    <h3>预处理与模型日志</h3>
+    <ul class="log-list">
+      {% for log in summary.logs %}<li>{{ log }}</li>{% endfor %}
+    </ul>
+  </div>
+</section>
+
+<section class="card mt">
+  <div class="actions" style="justify-content: space-between;">
+    <h3>学生明细表</h3>
+    <input id="filterInput" placeholder="按学号、姓名、班级、学科筛选" style="padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px;min-width:260px;">
+  </div>
+  <div class="table-wrap mt">
+    <table id="resultTable">
+      <thead>
+        <tr>{% for col in columns %}<th>{{ col }}</th>{% endfor %}<th>详情</th></tr>
+      </thead>
+      <tbody>
+        {% for row in records %}
+          <tr>
+            {% for col in columns %}
+              {% if col == '学业等级' %}
+                <td><span class="badge {% if row[col]=='优秀' %}excellent{% elif row[col]=='良好' %}good{% elif row[col]=='中等' %}mid{% elif row[col]=='待提高' %}low{% else %}help{% endif %}">{{ row[col] }}</span></td>
+              {% elif col == '风险预警等级' %}
+                <td><span class="badge {% if row[col]=='红色预警' %}help{% elif row[col]=='橙色关注' %}low{% elif row[col]=='黄色观察' %}mid{% else %}excellent{% endif %}">{{ row[col] }}</span></td>
+              {% else %}
+                <td>{{ row[col] }}</td>
+              {% endif %}
+            {% endfor %}
+            <td><button class="btn secondary" onclick="showStudent('{{ row['学号'] }}')">查看</button></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="studentDetail" class="card mt" style="display:none;"></section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='charts.js') }}"></script>
+<script>
+const chartData = {{ chart_data | tojson }};
+function renderCharts() {
+  drawBarChart('levelChart', chartData.level_counts, '学业等级分布');
+  drawBarChart('modelIndexChart', chartData.model_means, '多模型指数均值');
+  drawDonutChart('riskChart', chartData.risk_counts, '风险预警结构');
+  drawDonutChart('profileChart', chartData.profile_counts, '学业发展画像分布');
+  drawHistogram('scoreHistogram', chartData.score_histogram, 'RSM调整分区间分布');
+  drawRadarChart('primaryRadar', chartData.primary_means, '一级维度雷达图');
+  drawHorizontalBar('weakChart', chartData.top_weak_attributes, '未掌握率最高的二级属性');
+  drawScatter('scatterChart', chartData.scatter, '规则空间散点图');
+  drawHeatmap('subjectHeatmap', chartData.subject_dimension_matrix, ['成绩波动趋势', '知识点掌握度', '学习行为活跃度'], '学科 × 一级维度热力图');
+  drawCouplingScatter('couplingScatter', chartData.coupling_scatter, '知行耦合诊断图');
+}
+window.addEventListener('load', renderCharts);
+window.addEventListener('resize', renderCharts);
+
+document.getElementById('filterInput').addEventListener('input', function() {
+  const q = this.value.trim().toLowerCase();
+  const rows = document.querySelectorAll('#resultTable tbody tr');
+  rows.forEach(row => {
+    const text = row.innerText.toLowerCase();
+    row.style.display = text.includes(q) ? '' : 'none';
+  });
+});
+
+async function showStudent(studentId) {
+  const box = document.getElementById('studentDetail');
+  box.style.display = 'block';
+  box.innerHTML = '<p>正在加载学生诊断明细……</p>';
+  const resp = await fetch(`/api/student/${encodeURIComponent(studentId)}`);
+  const data = await resp.json();
+  if (!resp.ok) {
+    box.innerHTML = '<p>未找到学生明细。</p>';
+    return;
+  }
+  const r = data.result;
+  const d = data.detail || {};
+  const primary = d.primary_scores || {};
+  const secondary = d.secondary_scores || {};
+  const mastery = d.mastery || {};
+  const advanced = d.advanced_models || {};
+  const weak = d.weak_attributes || [];
+  const suggestions = d.suggestions || [];
+  box.innerHTML = `
+    <h3>${r['姓名']}（${r['学号']}）诊断报告</h3>
+    <div class="grid grid-4">
+      <div class="kpi"><span class="value">${r['RSM调整分']}</span><span class="label">RSM调整分</span></div>
+      <div class="kpi"><span class="value">${r['学业等级']}</span><span class="label">学业等级</span></div>
+      <div class="kpi"><span class="value">${r['规则空间Theta']}</span><span class="label">Theta</span></div>
+      <div class="kpi"><span class="value">${r['规则空间Zeta']}</span><span class="label">Zeta</span></div>
+    </div>
+    <div class="grid grid-2 mt">
+      <div><h4>一级维度</h4>${objectTable(primary)}</div>
+      <div><h4>辅助模型</h4>${objectTable(advanced)}</div>
+      <div><h4>二级属性掌握</h4>${objectTableWithMastery(secondary, mastery)}</div>
+    </div>
+    <h4>薄弱属性</h4>
+    <p>${weak.length ? weak.map(x => `${x[0]}：${x[1]}分`).join('；') : '暂无明显薄弱项'}</p>
+    <h4>建议</h4>
+    <ul class="log-list">${suggestions.map(s => `<li>${s}</li>`).join('')}</ul>
+  `;
+  box.scrollIntoView({behavior:'smooth'});
+}
+
+function objectTable(obj) {
+  return `<table style="min-width:0"><tbody>${Object.entries(obj).map(([k,v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</tbody></table>`;
+}
+function objectTableWithMastery(obj, mastery) {
+  return `<table style="min-width:0"><tbody>${Object.entries(obj).map(([k,v]) => `<tr><td>${k}</td><td>${v}</td><td>${mastery[k] ? '已掌握' : '待提升'}</td></tr>`).join('')}</tbody></table>`;
+}
+</script>
+{% endblock %}

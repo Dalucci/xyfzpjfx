@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}首页 - 学生学业发展规则空间分析系统{% endblock %}
+{% block content %}
+<section class="hero">
+  <h1>本地版学生学业发展评价分析系统</h1>
+  <p>当前原型把重点放在“数据导入—预处理—规则空间模型诊断—可视化—报告导出”的闭环上，不做学生端、教师端、学校端三类门户和复杂权限系统。</p>
+  <p>模型以三类核心维度为主线：成绩波动趋势、知识点掌握度、学习行为活跃度；再把二级指标转化为属性掌握模式，用规则空间模型输出 Theta、Zeta、学业等级、发展潜力和薄弱属性。</p>
+  <p>演示数据包含 180 条合成学生记录、35 个三级指标，并加入少量缺失值与异常值，用于展示数据校验、填补、标准化和多模型诊断全过程。</p>
+  <div class="actions mt">
+    <a class="btn light" href="{{ url_for('demo') }}">加载演示数据</a>
+    <a class="btn light" href="{{ url_for('template_file') }}">下载数据模板</a>
+  </div>
+</section>
+
+<div class="grid grid-2 mt">
+  <section class="card">
+    <h2>上传数据并分析</h2>
+    <form class="upload-box" action="{{ url_for('analyze') }}" method="post" enctype="multipart/form-data">
+      <p>支持 CSV、XLSX、XLS。建议先下载模板，按表头填入学生基本信息和三级指标数据。</p>
+      <input type="file" name="file" accept=".csv,.xlsx,.xls" required>
+      <div class="actions mt">
+        <button class="btn" type="submit">开始分析</button>
+        <a class="btn secondary" href="{{ url_for('template_file') }}">下载模板</a>
+      </div>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>最小可用功能</h2>
+    <div class="pill-row">
+      <span class="pill">Excel/CSV 导入</span>
+      <span class="pill">异常值识别</span>
+      <span class="pill">中位数填补</span>
+      <span class="pill">0-100 标准化</span>
+      <span class="pill">AHP 权重聚合</span>
+      <span class="pill">RSM Theta/Zeta</span>
+      <span class="pill">成长动能模型</span>
+      <span class="pill">知行耦合模型</span>
+      <span class="pill">风险预警模型</span>
+      <span class="pill">学业画像分群</span>
+      <span class="pill">模型中心</span>
+      <span class="pill">统一模型API</span>
+      <span class="pill">多模型导出</span>
+      <span class="pill">等级与潜力</span>
+      <span class="pill">薄弱项诊断</span>
+      <span class="pill">CSV/Excel 导出</span>
+    </div>
+    <p>这个版本适合课题中期展示、课堂试点数据分析和后续扩展。若以后再需要多角色系统，可以在此基础上增加登录和权限模块。</p>
+  </section>
+</div>
+
+{% if summary %}
+<section class="card mt">
+  <h2>最近一次分析结果</h2>
+  <div class="grid grid-4">
+    <div class="kpi"><span class="value">{{ summary.student_count }}</span><span class="label">学生数</span></div>
+    <div class="kpi"><span class="value">{{ summary.indicator_count }}</span><span class="label">识别指标</span></div>
+    <div class="kpi"><span class="value">{{ summary.rsm_mean }}</span><span class="label">RSM均分</span></div>
+    <div class="kpi"><span class="value">{{ summary.zeta_mean }}</span><span class="label">平均偏离度Zeta</span></div>
+  </div>
+  <div class="actions mt">
+    <a class="btn" href="{{ url_for('results') }}">查看完整结果</a>
+  </div>
+</section>
+{% endif %}
+
+<section class="card mt">
+  <div class="section-title">
+    <div>
+      <h2>多模型学生学业发展评价分析平台</h2>
+      <p>新增模型中心后，系统可按综合评价、诊断、预测、画像、预警、知识追踪、路径推荐、解释分析和学科专项统一组织模型。每个模型都有独立页面、独立 API、图表、学生明细、建议和导出入口。</p>
+    </div>
+    <a class="btn" href="{{ url_for('model_center') }}">进入模型中心</a>
+  </div>
+</section>
+
+<section class="card mt">
+  <h2>多学科学业发展评价模型</h2>
+  <p>在通用 RSM 分析结果基础上，系统提供 9 个学科化子模型。每个子页面包含学生综合评分、核心特征雷达、趋势推导、薄弱模块、重点学生和个性化建议。</p>
+  <div class="subject-card-grid">
+    {% for item in subject_models %}
+      <a class="subject-card-link" href="{{ url_for('model_subject', subject_key=item.key) }}" style="--subject-color: {{ item.theme }};">
+        <strong>{{ item.short_name }}</strong>
+        <span>{{ item.display_name }}</span>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="card mt">
+  <h2>数据字段说明</h2>
+  <p>模板内置 35 个三级指标。实际使用时不要求全部具备；系统会按已识别指标进行加权重算，并在预处理日志中显示可用指标数量。学生基本字段建议保留“学号、姓名、班级、学科”。</p>
+  <p>分值类指标使用 0-100，趋势类指标允许 -100 到 100，次数/时长类指标允许非负数。成绩标准差、成绩极差、薄弱知识点数量、错题重复犯错率、作业迟交次数等按“越低越好”处理。</p>
+</section>
+{% endblock %}

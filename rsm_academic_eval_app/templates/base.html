@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}学生学业发展规则空间分析系统{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <div class="logo">学生学业发展规则空间分析系统</div>
+    <nav class="nav">
+      <a href="{{ url_for('index') }}">首页</a>
+      <a href="{{ url_for('results') }}">结果</a>
+      <a href="{{ url_for('model_center') }}">模型中心</a>
+      <a href="{{ url_for('model_subject', subject_key='math') }}">学科模型</a>
+      <a href="{{ url_for('template_file') }}">模板</a>
+      <a href="{{ url_for('demo') }}">演示</a>
+    </nav>
+  </header>
+  <main class="container">
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for msg in messages %}<div class="notice">{{ msg }}</div>{% endfor %}
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="footer">本地运行 · Flask + Pandas + 规则空间模型 · 多模型评价分析平台 · 不依赖学生端/教师端/学校端权限体系</footer>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

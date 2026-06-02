@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}{{ student['姓名'] }} - 学生综合画像{% endblock %}
+{% block content %}
+<section class="card page-hero">
+  <div class="section-title page-header">
+    <div class="page-header-main">
+      <h1>{{ student['姓名'] }} 综合画像</h1>
+      <p>{{ student['班级'] }} · {{ student['学科'] }} · 学号 {{ student['学号'] }}</p>
+      <div class="pill-row">
+        <span class="pill">综合评分 {{ student['综合评分'] }}</span>
+        <span class="pill">RSM调整分 {{ student['RSM调整分'] }}</span>
+        <span class="pill">等级 {{ student['学业等级'] }}</span>
+        <span class="pill">风险 {{ student['风险预警等级'] }}</span>
+      </div>
+    </div>
+    <div class="actions action-panel">
+      <a class="btn secondary" href="{{ url_for('results') }}">返回结果</a>
+      <a class="btn secondary" href="{{ url_for('model_center') }}">模型中心</a>
+    </div>
+  </div>
+</section>
+
+<section class="grid grid-3 mt">
+  <div class="card">
+    <h2>规则空间指标</h2>
+    <div class="quality-list">
+      <span>Theta：{{ student['规则空间Theta'] }}</span>
+      <span>Zeta：{{ student['规则空间Zeta'] }}</span>
+      <span>最近理想状态：{{ student['最近理想状态'] }}</span>
+      <span>薄弱属性：{{ student['薄弱属性'] }}</span>
+    </div>
+  </div>
+  <div class="card wide-card">
+    <h2>建议摘要</h2>
+    <p>{{ student['建议摘要'] }}</p>
+  </div>
+</section>
+
+{% if subject_context %}
+<section class="grid grid-2 mt">
+  <div class="card">
+    <h2>{{ subject_context.short_name }}核心素养画像</h2>
+    <div class="model-suite-grid">
+      {% for name, value in subject_context.literacy_means.items() %}
+      <div class="metric-card">
+        <span class="metric-title">{{ name }}</span>
+        <strong>{{ value }}</strong>
+        <span class="metric-desc">所属学科群体均分</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="card">
+    <h2>所属学科多模型结果</h2>
+    <div class="model-suite-grid">
+      {% for name, value in subject_context.model_suite.items() %}
+      <div class="metric-card">
+        <span class="metric-title">{{ name }}</span>
+        <strong>{{ value }}</strong>
+        <span class="metric-desc">0-100标准分</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="card mt">
+  <h2>跨模型诊断</h2>
+  <div class="model-center-grid">
+    {% for card in model_cards %}
+      <article class="model-entry">
+        <div class="model-entry-head">
+          <strong>{{ card.model_name }}</strong>
+          <span>{{ card.score_label }} {{ card.score }}</span>
+        </div>
+        {% for line in card.diagnosis %}
+          <p>{{ line }}</p>
+        {% endfor %}
+        <a class="btn secondary" href="{{ card.url }}">进入模型</a>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="card mt">
+  <h2>九个二级属性</h2>
+  <div class="table-wrap small-table">
+    <table>
+      <thead><tr><th>属性</th><th>得分</th><th>掌握状态</th></tr></thead>
+      <tbody>
+        {% for name, value in detail.secondary_scores.items() %}
+          <tr>
+            <td>{{ name }}</td>
+            <td>{{ value }}</td>
+            <td>{{ "掌握" if detail.mastery.get(name) == 1 else "未掌握" }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="3">暂无二级属性明细。</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

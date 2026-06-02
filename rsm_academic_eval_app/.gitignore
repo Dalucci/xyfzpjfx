@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+uploads/
+output/
+
+# Excel files may contain real student data. Keep CSV demo/template files tracked.
+data/*.xlsx
+data/*.xls
+
+.env
+*.log

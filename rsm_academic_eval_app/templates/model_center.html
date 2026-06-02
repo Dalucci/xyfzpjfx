@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}模型中心 - 学生学业发展评价分析平台{% endblock %}
+{% block content %}
+<section class="card page-hero">
+  <div class="section-title page-header">
+    <div class="page-header-main">
+      <h1>学生学业发展评价模型中心</h1>
+      <p>模型中心按综合评价、诊断、预测、画像、预警、知识追踪、路径推荐、解释分析和学科专项组织模型入口。所有模型默认使用当前分析结果；没有当前结果时，进入模型详情会自动加载演示数据。</p>
+    </div>
+    <div class="actions action-panel">
+      <a class="btn" href="{{ url_for('demo') }}">加载演示数据</a>
+      <a class="btn secondary" href="{{ url_for('model_compare') }}">模型比较</a>
+    </div>
+  </div>
+</section>
+
+<section class="card mt">
+  <h2>当前数据状态</h2>
+  {% if summary %}
+    <div class="metric-strip">
+      <div class="kpi"><span class="value">{{ summary.student_count }}</span><span class="label">学生数</span></div>
+      <div class="kpi"><span class="value">{{ summary.indicator_count }}</span><span class="label">可用指标</span></div>
+      <div class="kpi"><span class="value">{{ summary.rsm_mean }}</span><span class="label">RSM均分</span></div>
+      <div class="kpi"><span class="value">{{ data_quality.missing_ratio if data_quality else 0 }}%</span><span class="label">标准化缺失率</span></div>
+    </div>
+  {% else %}
+    <p>当前会话尚未加载数据。点击任一模型详情页会自动使用演示数据，或在首页上传真实 CSV/Excel 数据后重新计算。</p>
+  {% endif %}
+</section>
+
+{% for category in categories %}
+  <section class="card mt">
+    <div class="section-title compact-title">
+      <div class="page-header-main">
+        <h2>{{ category }}</h2>
+        <p>同一类别模型共享统一结果协议、统一图表协议和统一导出入口，便于后续扩展真实题目级数据、Q矩阵或资源交互数据。</p>
+      </div>
+    </div>
+    <div class="model-center-grid">
+      {% for model in models if model.category == category %}
+        <article class="model-entry">
+          <div class="model-entry-head">
+            <strong>{{ model.name }}</strong>
+            <span>{{ model.model_id }}</span>
+          </div>
+          <p>{{ model.description }}</p>
+          <div class="mini-meta">
+            <span>{{ model.required_data | join('、') }}</span>
+            <span>{{ model.charts | length }} 类图表</span>
+          </div>
+          <div class="actions">
+            <a class="btn secondary" href="{{ url_for('model_detail', model_id=model.model_id) }}">进入分析</a>
+            <a class="btn ghost" href="{{ model.api }}">API</a>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  </section>
+{% endfor %}
+
+<section class="card mt">
+  <h2>模型开发状态表</h2>
+  <div class="table-wrap small-table">
+    <table>
+      <thead>
+        <tr>
+          <th>模型ID</th>
+          <th>模型名称</th>
+          <th>类别</th>
+          <th>输入数据要求</th>
+          <th>页面路由</th>
+          <th>API</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for model in models %}
+          <tr>
+            <td>{{ model.model_id }}</td>
+            <td>{{ model.name }}</td>
+            <td>{{ model.category }}</td>
+            <td>{{ model.required_data | join('、') }}</td>
+            <td><a href="{{ model.route }}">{{ model.route }}</a></td>
+            <td><a href="{{ model.api }}">{{ model.api }}</a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

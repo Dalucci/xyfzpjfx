@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}{{ model.display_name }} - 学生学业发展规则空间分析系统{% endblock %}
+{% block content %}
+<section class="card subject-hero page-hero" style="border-top: 4px solid {{ model.theme }};">
+  <div class="section-title page-header">
+    <div class="page-header-main">
+      <h2>{{ model.display_name }}</h2>
+      <p>{{ model.evaluation_focus or model.focus_text }}</p>
+      <div class="pill-row mt">
+        {% for item in model.core_literacies %}<span class="pill">{{ item }}</span>{% endfor %}
+      </div>
+    </div>
+    <div class="actions action-panel">
+      <a class="btn secondary" href="{{ url_for('results') }}">返回总览</a>
+      <a class="btn secondary" href="{{ url_for('download', kind='results') }}">下载结果CSV</a>
+    </div>
+  </div>
+  <div class="metric-strip mt">
+    <div class="kpi"><span class="value">{{ model.student_count }}</span><span class="label">本学科学生数</span></div>
+    <div class="kpi"><span class="value">{{ model.literacy_mean }}</span><span class="label">核心素养均分</span></div>
+    <div class="kpi"><span class="value">{{ model.competency_weighted_score }}</span><span class="label">权重综合得分</span></div>
+    <div class="kpi"><span class="value">{{ model.rsm_mean }}</span><span class="label">RSM调整均分</span></div>
+    <div class="kpi"><span class="value">{{ model.growth_mean }}</span><span class="label">成长动能均分</span></div>
+  </div>
+</section>
+
+<section class="card mt">
+  <h3>学科模型入口</h3>
+  <div class="subject-tabs">
+    {% for item in subject_models %}
+      <a class="subject-tab {% if item.key == model.key %}active{% endif %}" href="{{ url_for('model_subject', subject_key=item.key) }}" style="--tab-color: {{ item.theme }};">{{ item.short_name }}</a>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="chart-grid mt">
+  <div class="card"><canvas class="chart" id="subjectLiteracyRadar"></canvas></div>
+  <div class="card"><canvas class="chart" id="subjectRadar"></canvas></div>
+  <div class="card"><canvas class="chart" id="subjectCompetency"></canvas></div>
+  <div class="card"><canvas class="chart" id="subjectModelSuite"></canvas></div>
+  <div class="card"><canvas class="chart" id="subjectScoreBars"></canvas></div>
+  <div class="card"><canvas class="chart" id="subjectTrend"></canvas></div>
+  <div class="card wide-card"><canvas class="chart tall-chart" id="subjectLiteracyHeatmap"></canvas></div>
+  <div class="card"><canvas class="chart" id="subjectRisk"></canvas></div>
+  <div class="card wide-card"><canvas class="chart tall-chart" id="subjectWeakModules"></canvas></div>
+  <div class="card wide-card"><canvas class="chart tall-chart" id="subjectLevel"></canvas></div>
+</section>
+
+<section class="content-grid mt">
+  <div class="card">
+    <h3>核心素养与权重</h3>
+    <div class="table-wrap small-table">
+      <table>
+        <thead><tr><th>维度</th><th>权重</th><th>当前均分</th></tr></thead>
+        <tbody>
+          {% for name, weight in model.competency_weights.items() %}
+          <tr>
+            <td>{{ name }}</td>
+            <td>{{ (weight * 100) | round(0) }}%</td>
+            <td>{{ model.competency_means.get(name, 0) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <h3>学科多模型运行概览</h3>
+    <div class="model-suite-grid">
+      {% for name, value in model.model_suite.items() %}
+      <div class="metric-card">
+        <span class="metric-title">{{ name }}</span>
+        <strong>{{ value }}</strong>
+        <span class="metric-desc">0-100标准分</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="content-grid mt">
+  <div class="card">
+    <h3>学科评价用语</h3>
+    <div class="table-wrap small-table">
+      <table>
+        <thead><tr><th>等级</th><th>评价表述</th></tr></thead>
+        <tbody>
+          {% for level, comment in model.level_comments.items() %}
+          <tr>
+            <td>{{ level }}</td>
+            <td class="wrap-cell">{{ comment }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <h3>学科学习建议</h3>
+    <div class="table-wrap small-table">
+      <table>
+        <thead><tr><th>薄弱属性</th><th>学科化建议</th></tr></thead>
+        <tbody>
+          {% for attribute, advice in model.attribute_suggestions.items() %}
+          <tr>
+            <td>{{ attribute }}</td>
+            <td class="wrap-cell">{{ advice }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="content-grid mt">
+  <div class="card">
+    <h3>薄弱知识点与技能模块</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>模块</th><th>平均分</th><th>低于60%比例</th><th>建议</th></tr></thead>
+        <tbody>
+          {% for item in model.weak_modules %}
+          <tr>
+            <td>{{ item.module }}</td>
+            <td>{{ item.avg_score }}</td>
+            <td>{{ item.unmastered_rate }}%</td>
+            <td class="wrap-cell">{{ item.suggestion }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <h3>重点关注学生</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>学号</th><th>姓名</th><th>班级</th><th>RSM调整分</th><th>等级</th><th>预警</th><th>薄弱属性</th></tr></thead>
+        <tbody>
+          {% for s in model.focus_students %}
+          <tr>
+            <td>{{ s['学号'] }}</td>
+            <td>{{ s['姓名'] }}</td>
+            <td>{{ s['班级'] }}</td>
+            <td>{{ s['RSM调整分'] }}</td>
+            <td>{{ s['学业等级'] }}</td>
+            <td>{{ s['风险预警等级'] }}</td>
+            <td>{{ s['薄弱属性'] }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="card mt">
+  <h3>学科核心指标体系</h3>
+  <div class="pill-row">
+    {% for item in model.core_indicators %}<span class="pill">{{ item }}</span>{% endfor %}
+  </div>
+  <p>趋势折线为基于当前 RSM 调整分、进步退步幅度和学习稳定性指数推导的阶段性发展轨迹，用于展示趋势判断，不替代真实连续考试时间序列。</p>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='charts.js') }}"></script>
+<script>
+const subjectChartData = {{ model.chart_data | tojson }};
+function renderSubjectCharts() {
+  drawRadarChart('subjectLiteracyRadar', subjectChartData.literacy_means, '{{ model.short_name }}核心素养雷达图');
+  drawRadarChart('subjectRadar', subjectChartData.module_means, '{{ model.short_name }}核心特征雷达图');
+  drawBarChart('subjectCompetency', subjectChartData.competency_means, '{{ model.short_name }}权重维度得分');
+  drawBarChart('subjectModelSuite', subjectChartData.model_suite, '{{ model.short_name }}多模型运行概览');
+  drawBarChart('subjectScoreBars', subjectChartData.student_scores, '{{ model.short_name }}学生综合评分TOP12');
+  drawLineChart('subjectTrend', subjectChartData.trend_line, '{{ model.short_name }}发展趋势推导');
+  drawHeatmap('subjectLiteracyHeatmap', subjectChartData.literacy_heatmap, subjectChartData.literacy_dimensions, '{{ model.short_name }}班级核心素养热力图');
+  drawDonutChart('subjectRisk', subjectChartData.risk_counts, '{{ model.short_name }}风险预警结构');
+  drawHorizontalBar('subjectWeakModules', subjectChartData.weak_modules, '{{ model.short_name }}薄弱模块低掌握率');
+  drawBarChart('subjectLevel', subjectChartData.level_counts, '{{ model.short_name }}学业等级分布');
+}
+window.addEventListener('load', renderSubjectCharts);
+window.addEventListener('resize', renderSubjectCharts);
+</script>
+{% endblock %}
