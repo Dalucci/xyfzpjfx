@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}导入数据分析 - 学生学业发展规则空间分析系统{% endblock %}
+{% block content %}
+<section class="card page-hero">
+  <div class="section-title page-header">
+    <div class="page-header-main">
+      <h1>网页导入数据分析</h1>
+      <p>该页面支持在浏览器端导入 CSV 数据并完成规则空间模型近似计算，适合 GitHub Pages 静态站在线演示。完整 Flask 服务仍支持 CSV、XLSX、XLS 上传和后端精确计算。</p>
+      <div class="pill-row mt">
+        <span class="pill">CSV 导入</span>
+        <span class="pill">AHP 权重聚合</span>
+        <span class="pill">RSM Theta/Zeta</span>
+        <span class="pill">风险预警</span>
+        <span class="pill">结果导出</span>
+      </div>
+    </div>
+    <div class="actions action-panel">
+      <a class="btn secondary" href="{{ url_for('template_file') }}">下载模板</a>
+      <a class="btn secondary" href="{{ url_for('download', kind='synthetic') }}">下载5000人样例</a>
+    </div>
+  </div>
+</section>
+
+<section class="card mt" id="staticAnalyzer">
+  <div class="section-title table-head">
+    <div class="page-header-main">
+      <h2>导入与计算</h2>
+      <p>GitHub Pages 静态版不会把文件上传到服务器，数据只在当前浏览器内解析和计算。建议使用本系统模板字段，至少保留“学号、姓名、班级、学科”和若干三级指标。</p>
+    </div>
+    <div class="actions action-panel">
+      <button class="btn secondary" type="button" id="loadSampleCsv">加载线上5000人样例</button>
+      <button class="btn ghost" type="button" id="exportStaticCsv" disabled>导出结果CSV</button>
+    </div>
+  </div>
+  <div class="upload-box mt">
+    <input type="file" id="staticCsvFile" accept=".csv,text/csv">
+    <div class="actions mt">
+      <button class="btn" type="button" id="runStaticImport">开始浏览器端分析</button>
+      <span class="muted-line" id="staticImportStatus">请选择 CSV 文件，或直接加载线上 5000 人样例。</span>
+    </div>
+  </div>
+</section>
+
+<section class="metric-strip mt" id="staticKpis" hidden></section>
+
+<section class="chart-grid mt" id="staticCharts" hidden>
+  <div class="card"><canvas class="chart" id="staticLevelChart"></canvas></div>
+  <div class="card"><canvas class="chart" id="staticPrimaryChart"></canvas></div>
+  <div class="card wide-card"><canvas class="chart tall-chart" id="staticWeakChart"></canvas></div>
+  <div class="card wide-card"><canvas class="chart tall-chart" id="staticScatterChart"></canvas></div>
+</section>
+
+<section class="card mt" id="staticResultTableCard" hidden>
+  <div class="section-title table-head">
+    <div class="page-header-main">
+      <h2>学生评价结果</h2>
+      <p>表格默认展示前 300 条结果；导出 CSV 会包含本次导入的全部学生。</p>
+    </div>
+    <input class="table-search" id="staticTableSearch" type="search" placeholder="搜索姓名、学号、班级、学科">
+  </div>
+  <div class="table-wrap">
+    <table id="staticResultTable">
+      <thead>
+        <tr>
+          <th>学号</th>
+          <th>姓名</th>
+          <th>班级</th>
+          <th>学科</th>
+          <th>综合评分</th>
+          <th>RSM调整分</th>
+          <th>学业等级</th>
+          <th>发展潜力</th>
+          <th>Theta</th>
+          <th>Zeta</th>
+          <th>风险</th>
+          <th>薄弱属性</th>
+          <th>建议摘要</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+window.STATIC_IMPORT_CONFIG = {{ config | tojson }};
+</script>
+<script src="{{ url_for('static', filename='charts.js') }}"></script>
+<script src="{{ url_for('static', filename='static_import.js') }}"></script>
+{% endblock %}

@@ -25,6 +25,16 @@ def test_home_template_and_config_routes() -> None:
     assert config_response.status_code == 200
     assert config_response.get_json()["mastery_threshold"] == 65
 
+    static_import_response = client.get("/static-import")
+    assert static_import_response.status_code == 200
+    assert "网页导入数据分析".encode("utf-8") in static_import_response.data
+    assert "static_import.js".encode("utf-8") in static_import_response.data
+
+    synthetic_response = client.get("/download/synthetic")
+    assert synthetic_response.status_code == 200
+    assert "attachment" in synthetic_response.headers["Content-Disposition"]
+    assert "学号,姓名,班级,学科".encode("utf-8") in synthetic_response.data
+
 
 def test_demo_results_and_api_routes_are_available() -> None:
     app.config.update(TESTING=True)

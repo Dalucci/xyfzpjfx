@@ -11,14 +11,18 @@ from typing import Dict
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT_DIR = BASE_DIR / "site"
+DEFAULT_DATA_PATH = BASE_DIR / "data" / "synthetic_5000_students.csv"
 sys.path.insert(0, str(BASE_DIR))
 
-from app import SUBJECT_MODELS, app  # noqa: E402
+import app as app_module  # noqa: E402
+from app import EVALUATOR, MODEL_REGISTRY, OUTPUT_DIR, SUBJECT_MODELS, app  # noqa: E402
+from models.rsm import save_artifacts  # noqa: E402
+from services.data_service import load_run_dataset as load_dataset_from_files  # noqa: E402
 
 STATIC_NOTICE = (
     '<div id="static-export-note" class="notice">'
-    "当前为 GitHub Pages 静态演示版，已内置演示数据和图表。"
-    "上传分析、在线生成新报告等动态功能需要部署完整 Flask 服务。"
+    "当前为 GitHub Pages 静态演示版，已同步 5000 人合成测试数据和图表。"
+    "可在“导入分析”页上传 CSV 并在浏览器端计算；Excel 上传和后端精确分析需要部署完整 Flask 服务。"
     "</div>"
 )
 
@@ -26,6 +30,7 @@ STATIC_NOTICE = (
 def main() -> None:
     parser = argparse.ArgumentParser(description="Export the Flask demo run as a GitHub Pages static site.")
     parser.add_argument("--output", default=str(DEFAULT_OUTPUT_DIR), help="Static site output directory.")
+    parser.add_argument("--data", default=str(DEFAULT_DATA_PATH), help="CSV/XLSX data file used to build the static demo.")
     args = parser.parse_args()
 
     output_dir = Path(args.output).resolve()
@@ -35,9 +40,13 @@ def main() -> None:
     (output_dir / ".nojekyll").write_text("", encoding="utf-8")
 
     _copy_static_assets(output_dir)
+    _enable_model_cache()
 
     client = app.test_client()
-    client.get("/demo", follow_redirects=True)
+    data_path = Path(args.data).resolve()
+    if not data_path.exists():
+        data_path = BASE_DIR / "data" / "demo_students.csv"
+    _prepare_static_run(client, data_path)
 
     catalog = _json(client, "/api/models/catalog")
     student_rows = _json(client, "/api/results")
@@ -51,10 +60,57 @@ def main() -> None:
     print(f"Static site exported to {output_dir}")
 
 
+def _enable_model_cache() -> None:
+    original_run_model = MODEL_REGISTRY.run_model
+    cache = {}
+
+    def cached_run_model(model_id, dataset, params=None):
+        params_key = json.dumps(params or {}, sort_keys=True, ensure_ascii=False)
+        key = (str(model_id), params_key)
+        if key not in cache:
+            cache[key] = original_run_model(model_id, dataset, params)
+        return cache[key]
+
+    MODEL_REGISTRY.run_model = cached_run_model
+
+
 def _copy_static_assets(output_dir: Path) -> None:
     static_src = BASE_DIR / "static"
     static_dst = output_dir / "static"
     shutil.copytree(static_src, static_dst)
+
+
+def _prepare_static_run(client, data_path: Path) -> None:
+    run_id = "static_export"
+    run_dir = OUTPUT_DIR / run_id
+    artifacts = EVALUATOR.analyze_file(data_path)
+    save_artifacts(artifacts, run_dir)
+    dataset = load_dataset_from_files(run_dir)
+    original_load_json = app_module.load_json
+
+    def cached_load_run_dataset(path):
+        if Path(path) == run_dir:
+            return dataset
+        return load_dataset_from_files(path)
+
+    def cached_load_results(path):
+        if Path(path) == run_dir:
+            return dataset.results
+        return app_module.pd.read_csv(Path(path) / "rsm_results.csv", encoding="utf-8-sig")
+
+    def cached_load_json(path, default=None):
+        path = Path(path)
+        if path.parent == run_dir and path.name == "summary.json":
+            return dataset.summary
+        if path.parent == run_dir and path.name == "student_details.json":
+            return dataset.details
+        return original_load_json(path, default)
+
+    app_module.load_run_dataset = cached_load_run_dataset
+    app_module.load_results = cached_load_results
+    app_module.load_json = cached_load_json
+    with client.session_transaction() as sess:
+        sess["run_id"] = run_id
 
 
 def _build_route_map(catalog: list[dict], student_rows: list[dict]) -> Dict[str, str]:
@@ -64,10 +120,13 @@ def _build_route_map(catalog: list[dict], student_rows: list[dict]) -> Dict[str,
         "/results": "results.html",
         "/models": "models.html",
         "/models/compare": "models_compare.html",
+        "/static-import": "static_import.html",
         "/template": "downloads/rsm_data_template.csv",
+        "/config": "api/config.json",
         "/download/results": "downloads/rsm_results.csv",
         "/download/normalized": "downloads/rsm_normalized.csv",
         "/download/excel": "downloads/rsm_academic_report.xlsx",
+        "/download/synthetic": "downloads/synthetic_5000_students.csv",
         "/analyze": "#static-export-note",
         "/api/models/catalog": "api/models_catalog.json",
         "/api/models/compare": "api/models_compare.json",
@@ -92,7 +151,7 @@ def _build_route_map(catalog: list[dict], student_rows: list[dict]) -> Dict[str,
         route_map[f"/api/models/{model_id}/export/excel"] = "#static-export-note"
         route_map[f"/api/export/{model_id}/excel"] = "#static-export-note"
 
-    for row in student_rows:
+    for row in student_rows[:300]:
         student_id = str(row.get("学号", ""))
         if student_id:
             route_map[f"/students/{student_id}"] = f"students_{student_id}.html"
@@ -104,6 +163,7 @@ def _build_route_map(catalog: list[dict], student_rows: list[dict]) -> Dict[str,
 def _write_downloads(client, output_dir: Path, route_map: Dict[str, str]) -> None:
     downloads = {
         "/template": "downloads/rsm_data_template.csv",
+        "/download/synthetic": "downloads/synthetic_5000_students.csv",
         "/download/results": "downloads/rsm_results.csv",
         "/download/normalized": "downloads/rsm_normalized.csv",
         "/download/excel": "downloads/rsm_academic_report.xlsx",
@@ -121,6 +181,7 @@ def _write_api_files(client, output_dir: Path, catalog: list[dict], route_map: D
         "/api/data/quality",
         "/api/data/summary",
         "/api/results",
+        "/config",
     ]
     for route in simple_api_routes:
         _write_json_response(client, output_dir / route_map[route], route)
@@ -149,12 +210,13 @@ def _write_html_pages(
         ("/results", "results.html"),
         ("/models", "models.html"),
         ("/models/compare", "models_compare.html"),
+        ("/static-import", "static_import.html"),
     ]
     pages.extend((f"/model/{subject_key}", f"model_{subject_key}.html") for subject_key in SUBJECT_MODELS)
     pages.extend((f"/models/{item['model_id']}", f"models_{item['model_id']}.html") for item in catalog)
     pages.extend(
         (f"/students/{row['学号']}", f"students_{row['学号']}.html")
-        for row in student_rows
+        for row in student_rows[:300]
         if row.get("学号")
     )
 
@@ -221,8 +283,9 @@ def _write_static_readme(output_dir: Path) -> None:
                 "- `results.html`：演示数据总览",
                 "- `model_*.html`：各学科评价模型页面",
                 "- `models_*.html`：统一模型详情页面",
+                "- `static_import.html`：浏览器端 CSV 导入分析页面",
                 "",
-                "GitHub Pages 静态站不能执行 Flask 上传分析。完整动态功能请部署 Python Web 服务。",
+                "GitHub Pages 静态站已内置 5000 人合成测试数据，并支持浏览器端 CSV 导入分析。Excel 上传和完整后端导出请部署 Python Web 服务。",
             ]
         ),
     )

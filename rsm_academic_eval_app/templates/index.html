@@ -5,10 +5,11 @@
   <h1>本地版学生学业发展评价分析系统</h1>
   <p>当前原型把重点放在“数据导入—预处理—规则空间模型诊断—可视化—报告导出”的闭环上，不做学生端、教师端、学校端三类门户和复杂权限系统。</p>
   <p>模型以三类核心维度为主线：成绩波动趋势、知识点掌握度、学习行为活跃度；再把二级指标转化为属性掌握模式，用规则空间模型输出 Theta、Zeta、学业等级、发展潜力和薄弱属性。</p>
-  <p>演示数据包含 180 条合成学生记录、35 个三级指标，并加入少量缺失值与异常值，用于展示数据校验、填补、标准化和多模型诊断全过程。</p>
+  <p>本地演示数据和 GitHub Pages 静态演示数据均为合成学生记录，覆盖 35 个三级指标，并加入不同层次、年级、班级和选科组合，用于展示数据校验、标准化和多模型诊断全过程。</p>
   <div class="actions mt">
     <a class="btn light" href="{{ url_for('demo') }}">加载演示数据</a>
     <a class="btn light" href="{{ url_for('template_file') }}">下载数据模板</a>
+    <a class="btn light" href="{{ url_for('static_import') }}">网页导入分析</a>
   </div>
 </section>
 
@@ -21,6 +22,7 @@
       <div class="actions mt">
         <button class="btn" type="submit">开始分析</button>
         <a class="btn secondary" href="{{ url_for('template_file') }}">下载模板</a>
+        <a class="btn ghost" href="{{ url_for('static_import') }}">静态网页端CSV分析</a>
       </div>
     </form>
   </section>

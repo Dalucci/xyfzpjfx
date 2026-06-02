@@ -75,13 +75,19 @@ pytest -q
 python utils/export_static_site.py --output site
 ```
 
+默认会读取 `data/synthetic_5000_students.csv` 生成静态站，因此 GitHub Pages 上的总览、模型中心、学科页面和下载结果会同步 5000 人合成测试数据。也可以指定其他数据文件：
+
+```bash
+python utils/export_static_site.py --output site --data data/synthetic_5000_students.csv
+```
+
 生成后 `site/index.html` 可作为静态演示首页。推送到 GitHub 后，工作流会自动生成并发布 GitHub Pages。发布完成后页面通常位于：
 
 ```text
 https://<你的GitHub用户名>.github.io/<仓库名>/
 ```
 
-注意：GitHub Pages 只能托管静态文件。该静态版可以展示演示数据、总览图表、模型中心、各学科模型页和模型详情页，但不能在线上传新数据或执行 Flask 后端分析。
+注意：GitHub Pages 只能托管静态文件。该静态版可以展示 5000 人样例数据、总览图表、模型中心、各学科模型页和模型详情页；`/static_import.html` 页面支持 CSV 文件在浏览器端导入并完成规则空间模型近似计算。Excel 上传、后端精确分析和完整报告导出仍需要部署 Flask 服务。
 
 ## 6. 完整 Flask 服务部署
 

@@ -104,6 +104,15 @@ def template_file():
     return send_file(template_path, as_attachment=True, download_name="规则空间模型数据模板.csv")
 
 
+@app.route("/static-import")
+def static_import():
+    return render_template(
+        "static_import.html",
+        config=EVALUATOR.config,
+        subject_models=subject_nav(),
+    )
+
+
 @app.route("/analyze", methods=["POST"])
 def analyze():
     file = request.files.get("file")
@@ -367,6 +376,13 @@ def api_student(student_id: str):
 
 @app.route("/download/<kind>")
 def download(kind: str):
+    if kind == "synthetic":
+        path = DATA_DIR / "synthetic_5000_students.csv"
+        if path.exists():
+            return send_file(path, as_attachment=True, download_name="5000学生测试样例数据.csv")
+        flash("5000人样例数据文件不存在。")
+        return redirect(url_for("index"))
+
     run_dir = current_run_dir()
     if not run_dir:
         flash("当前没有可下载的分析结果。")
@@ -376,7 +392,7 @@ def download(kind: str):
         "normalized": (run_dir / "normalized_data.csv", "标准化数据.csv"),
         "summary": (run_dir / "summary.json", "分析汇总.json"),
         "details": (run_dir / "student_details.json", "学生明细诊断.json"),
-        "excel": (run_dir / "rsm_analysis_report.xlsx", "规则空间模型分析报告.xlsx")
+        "excel": (run_dir / "rsm_analysis_report.xlsx", "规则空间模型分析报告.xlsx"),
     }
     if kind not in mapping or not mapping[kind][0].exists():
         flash("文件不存在。")
